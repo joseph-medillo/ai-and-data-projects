@@ -1,115 +1,134 @@
 ---
 **SEO Title:** Vibe Coding a Custom Triple Whale & Moby AI App Dashboard for Ecommerce
-**Meta Description:** Discover how we used vibe coding to build a blazing-fast, single-page Moby AI app and Triple Whale dashboard for a fast-growing ecommerce clothing brand.
-**Target Keywords:** Triple Whale, Moby AI, vibe coding, Moby AI app, custom ecommerce dashboard, Shopify data, single-page app
+**Meta Description:** Discover how we used vibe coding to build a blazing-fast, single-page Moby AI app and Triple Whale dashboard for a fast-growing ecommerce clothing brand, taking a deep dive from backend data sources to frontend rendering.
+**Target Keywords:** Triple Whale, Moby AI, vibe coding, Moby AI app, custom ecommerce dashboard, Shopify data, single-page app, ecommerce architecture
 ---
 
-# Under the Hood: Vibe Coding a Real-Time Moby AI App Dashboard for an Ecommerce Clothing Brand
+# Under the Hood: Architecting a Real-Time Triple Whale & Moby AI Dashboard (Backend to Frontend)
 
-In the fast-paced world of ecommerce apparel, having access to real-time, actionable data is critical. For a fast-growing **Ecommerce Clothing Brand**, we needed a highly responsive, customized dashboard that could synthesize complex attribution, channel performance, and product data without the overhead of a heavy frontend framework. 
+In the fast-paced world of ecommerce apparel, having access to real-time, actionable data is critical. For a fast-growing **Ecommerce Clothing Brand**, we needed a highly responsive, customized dashboard that could synthesize complex attribution, channel performance, and product data. 
 
-Welcome to the era of **vibe coding**—where we focus on the desired outcome and architecture, leveraging AI to help bring the vision to life rapidly. This post dives deep into the architecture of the custom **Moby AI app** we built within the **Triple Whale** ecosystem. We'll explore how we achieved a blazing-fast, single-page application using vanilla JavaScript, Tailwind CSS, and a robust Moby AI data integration, complete with a look at the actual UI in action.
-
-*[INSERT DASHBOARD OVERVIEW IMAGE HERE - Use the image showing the KPI Scorecard and Top Selling Products]*
-
----
-
-## The Core Philosophy: Simplicity Meets Power in Triple Whale
-
-The dashboard is designed as a **single-page, single-file HTML app** deployed directly as a Triple Whale miniapp. It relies on vanilla JavaScript, embedded CSS, and Tailwind CSS loaded via CDN. By eschewing heavy frameworks and embracing a vibe coding approach, we minimized loading times and simplified deployment.
-
-The primary purpose of the app is to provide a comprehensive Triple Whale ecommerce dashboard with dynamic date, attribution, and channel controls. It fetches live warehouse data at runtime via the Moby AI query helper, transforms the SQL query results directly in the browser, and renders high-level KPI cards alongside five detailed reporting sections.
+Embracing the concept of **vibe coding**—focusing rapidly on outcomes and architecture with AI assistance—we built a custom **Moby AI app** integrated directly into the **Triple Whale** ecosystem. To truly understand how this blazing-fast, single-page application works, we need to trace the data journey from the ground up: starting at the backend data tables and moving all the way up to the glass of the frontend UI.
 
 ---
 
-## High-Level Architecture
+## 1. The Backend: Data Sources & Truth
 
-The application relies on a unified state management approach that orchestrates data fetching, client-side transformations, and DOM rendering. Here is a visual overview of how data flows from the user interface down to the Triple Whale analytics runtime.
+The foundation of any analytics dashboard is its data. In the Triple Whale ecosystem, our Moby AI app pulls live, read-only data from several core warehouse tables at runtime. There is no intermediate database caching our business logic; we go straight to the source.
 
-*[INSERT MERMAID FLOWCHART HERE - Copy and paste the Mermaid code block provided previously]*
-
-### Runtime Sequence
-
-The lifecycle of the app is highly optimized for fast initial paints and concurrent data loading:
-
-1. **Initialization:** On `DOMContentLoaded`, the app wires up controls, tabs, navigation, and resize behaviors.
-2. **Context & Theme:** Restores user theme preferences and waits for the shop context from the Triple Whale miniapp runtime.
-3. **Concurrent Data Loading:** A `loadAll()` orchestrator fires off parallel SQL requests for KPIs, Products, Campaigns, Orders, Landing Pages, and Search Terms.
-4. **Execution & Transformation:** Read-only parameterized SQL is executed against the Triple Whale data warehouse using Moby AI capabilities. Result arrays are returned to the browser where they are joined, merged, ranked, and formatted.
-5. **Render:** The DOM is updated, replacing loading skeletons with rich interactive tables and charts.
+* **`orders_table`**: The ultimate source of transaction truth. This table provides revenue, taxes, quantities, discounts, Cost of Goods Sold (COGS), shipping costs, fees, and the vital contribution margin used for order-level ranking.
+* **`pixel_orders_table`**: The core of our attribution logic. It links orders to channels and campaigns based on the selected attribution model and window.
+* **`ads_table`**: Feeds us spend and one-day link-click metrics broken down by channel and campaign.
+* **`sessions_table` & `customer_journey_table`**: Provide deep insights into user behavior, landing pages, onsite search events, and product-page views.
+* **`products_table`**: Delivers the product catalog details, images, variant data, and live inventory.
+* **`web_analytics_table`**: Supplies sitewide bounce-rate metrics.
 
 ---
 
-## Component Layers
+## 2. Data Access: The Query API
 
-We separated concerns conceptually within the single file to maintain clean code and scalability, staying true to our rapid vibe coding methodology.
+To bridge the gap between these robust backend tables and the client, we rely on the **Triple Whale Miniapps Query API**. 
 
-### 1. Presentation Layer
-The HTML provides the full visual structure. It features responsive CSS, dark/light mode variables, scrollable tables, resizable columns, sticky navigation, and an `IntersectionObserver` to track active sections. 
-* **Key Sections:** KPI scorecard, Top Selling Products, Top Channels & Campaigns, Orders by Contribution Margin, Top Landing Pages, and Top Search Terms.
+The app defines SQL templates directly within the code. Through the runtime SQL query helper, we execute highly parameterized queries based on user selections. Parameters dynamically injected include:
+* `startDate` and `endDate` (calculated in the shop's local timezone).
+* `attribution_window`.
+* Curated arrays of Campaign, Product, Order, Landing Page, or Channel IDs.
 
-### 2. Client State & Controls
-The brain of the dashboard is the primary state object, tracking:
-* Date preset, start, and end dates.
-* Attribution model (e.g., Last Click) and window (e.g., Lifetime).
-* Channel scope (including a powerful "Paid Channels Only" mode).
-
-Changing any of these parameters instantly invalidates affected cached data and triggers a reload for the relevant widgets within the Moby AI app.
-
-### 3. Data-Access Layer
-SQL templates are defined directly in the app and submitted through the Triple Whale runtime query helper. We use parameterization for safety and efficiency, passing in dates, attribution windows, and dynamically generated IDs (like product or campaign arrays).
-
-### 4. Client Transformation Layer
-This is where the magic happens. Instead of relying on a middle-tier server, the browser performs bounded transformations on the returned data arrays. It computes complex display metrics like Average Order Value (AOV), Conversion Rate (CVR), and Contribution Margin (CM) directly on the client side.
-
-### 5. Persistence Layer
-To respect data privacy and minimize risk, business report data is **never persisted** by the app flow. It is always fetched fresh at runtime. The only persisted data is a lightweight JSON file for the user's theme preference.
+*Security Note:* All SQL is strictly read-only. Furthermore, the attribution model is selected from a hardcoded allow-list, ensuring no user-entered free text ever makes it into a SQL literal.
 
 ---
 
-## Dissecting the Widget Data Flow
+## 3. The Architecture Flow
 
-Each section of the dashboard is powered by a targeted data pipeline designed specifically to answer the questions an apparel brand asks daily.
+Before the data hits the UI, it passes through an orchestration and transformation layer. Here is the visual architecture mapping how user state triggers queries, which in turn pull from the backend to render the frontend.
 
-### KPI Scorecard & Top Selling Products
-As seen in the dashboard overview, the KPI scorecard tracks critical top-level metrics like Revenue, Total Orders, AOV, Items Per Order, Views, and Conversion Rate in real-time. 
-Directly below, the **Top Selling Products** section merges Triple Whale attributed sales with product-page views, inventory, and catalog imagery. It visually ranks top items (like graphic tees and seasonal sweatshirts) alongside their specific AOV and CVR, allowing merchandisers to instantly see what's moving.
+```mermaid
+flowchart TD
+    U[Dashboard user] --> UI[Browser UI<br/>Single-file HTML app]
 
-### Top Channels & Campaigns
+    UI --> EVT[Event handlers<br/>date, attribution, channel,<br/>refresh, tabs, theme]
+    EVT --> STATE[Client state<br/>date range, attribution model,<br/>attribution window, channel scope]
 
-*[INSERT TOP CHANNELS & CAMPAIGNS IMAGE HERE - Use the image showing the Attentive and Facebook-Ads tabs]*
+    CTX[Triple Whale miniapp runtime] -->|shop context| STATE
+    FS[Miniapp file storage] <-->|user/theme.json| UI
 
-This widget pulls attributed revenue, ad spend, and clicks. It breaks down performance by channels (e.g., SMS via Attentive or Facebook Ads) and dynamically shows the specific products driving conversions from those sources, complete with their own contribution margin per order.
+    STATE --> LOAD[loadAll orchestration]
+    LOAD --> KPI[Load KPI scorecard]
+    LOAD --> PROD[Load top products]
+    LOAD --> CAMP[Load channels and campaigns]
+    LOAD --> ORD[Load top/bottom CM orders]
+    LOAD --> LP[Load landing pages]
+    LOAD --> SEARCH[Load search terms]
 
-### Orders by Contribution Margin
+    KPI --> QRY[Runtime SQL query helper]
+    PROD --> QRY
+    CAMP --> QRY
+    ORD --> QRY
+    LP --> QRY
+    SEARCH --> QRY
 
-*[INSERT ORDERS IMAGE HERE - Use the image showing Top 10 + Bottom 20 Orders by Contribution Margin]*
+    QRY --> API[Triple Whale Miniapps Query API]
 
-Revenue is vanity; margin is sanity. This section runs separate queries for Top 10 and Bottom 20 orders by contribution margin. By analyzing factors like Cost of Goods Sold (COGS), shipping costs, and heavy discounting (which is common in apparel sales), it exposes the true profit per transaction.
+    API --> OT[(orders_table)]
+    API --> PO[(pixel_orders_table)]
+    API --> AD[(ads_table)]
+    API --> SES[(sessions_table)]
+    API --> CJ[(customer_journey_table)]
+    API --> WA[(web_analytics_table)]
+    API --> PT[(products_table)]
 
-### Top Landing Pages
+    OT --> RESULT[Query results]
+    PO --> RESULT
+    AD --> RESULT
+    SES --> RESULT
+    CJ --> RESULT
+    WA --> RESULT
+    PT --> RESULT
 
-*[INSERT LANDING PAGES IMAGE HERE - Use the image showing Top 10 Landing Pages by Bounce Rate]*
+    RESULT --> XFORM[Client-side joins, maps,<br/>aggregation, formatting, ranking]
+    XFORM --> RENDER[DOM renderers]
+    RENDER --> UI
 
-This analyzes session-level data to identify high-traffic but high-bounce URLs. For an apparel brand, this highlights which specific product drops, clearance collections, or VIP deals might be driving clicks but failing to convert, helping to optimize the frontend experience.
-
-### Search Terms
-
-*[INSERT SEARCH TERMS IMAGE HERE - Use the image showing Top 20 Search Terms]*
-
-This widget matches onsite search events to subsequent attributed orders. It reveals exactly what customers are actively looking for—whether it's "slippers," "sweatshirts," "long sleeve," or "v neck"—and ties those searches directly to AOV and Total Revenue. It's a goldmine for product development and collection naming.
+    QRY -. failure .-> ERR[Widget-level error state and retry]
+    ERR --> UI
+```
 
 ---
 
-## Security Boundaries
+## 4. The Middleware: Client-Side Transformation
 
-Security was paramount. By design:
-* All SQL executed by the Moby AI app is strictly **read-only**.
-* The attribution model is validated against a strict fixed allow-list.
-* Dynamic text rendered in the DOM is sanitized using robust HTML escaping functions.
+In traditional architectures, a Node.js or Python backend would process the SQL results before sending JSON to the frontend. In our **single-page, single-file HTML app**, the browser handles the heavy lifting.
+
+Once the `loadAll()` orchestrator receives the result arrays from the Query API, the browser-side JavaScript performs bounded transformations:
+* **Joining:** Merging attribution rows to order-level contribution margins by order ID.
+* **Mapping:** Aligning campaign/channel spend, clicks, views, and product data.
+* **Combining:** Linking abstract product data with live catalog images and inventory.
+* **Computing:** Calculating complex display metrics on the fly, including Average Order Value (AOV), Conversion Rate (CVR), Contribution Margin (CM) per order, Customer Acquisition Cost (CAC), and bounce rates.
+* **Formatting:** Formatting currency, percentages, and dates before passing them to the DOM renderers.
+
+---
+
+## 5. The Frontend: Presentation & UI
+
+The frontend is an exercise in speed and simplicity. It is implemented purely using vanilla JavaScript, embedded CSS, and **Tailwind CSS** loaded via CDN. There is no React, Vue, or Angular overhead.
+
+### State Management & Controls
+The client state acts as the brain of the UI. It tracks the date preset, attribution model/window, and the channel scope (including an intelligent "Paid Channels Only" mode). Changing a date, attribution setting, or channel scope instantly invalidates affected cached data and reloads specific widgets independently.
+
+### The Dashboard Widgets
+The UI renders six distinct data widgets:
+1. **KPI Scorecard:** Loads order KPIs, bounce rate, unique views, and platform clicks. It dynamically switches between attributed order populations and sitewide metrics based on channel filters.
+2. **Top Selling Products:** Renders ranked product cards by combining attributed sales, product-page views, catalog metadata, inventory, and images.
+3. **Top Channels & Campaigns:** Displays attributed orders, ad spend, one-day platform clicks, and top products. A unified loading pipeline powers snappy tabs between Channels and Campaigns.
+4. **Orders:** Highlights the Top 10 and Bottom 20 orders by contribution margin, factoring in blended spend-per-order to calculate true CAC.
+5. **Landing Pages:** Groups session-level data by base URL (stripping query parameters) to highlight bounce rates, CVR, and AOV for top entry points.
+6. **Search Terms:** Matches onsite search events to subsequent attributed orders, capturing the value of searches even across later sessions.
+
+### Resiliency & UX
+Because we fetch data directly from warehouse tables at runtime, widget-level failure handling is crucial. Using `Promise.allSettled()`, individual query results are evaluated independently. Loading skeletons preserve layout structure before data arrives, and if a query fails, localized retry buttons allow the user to reload just that specific widget group without refreshing the entire page.
 
 ## Conclusion
 
-By leveraging a single-file, serverless architecture layered on top of Triple Whale and Moby AI, we delivered a highly capable, instantaneous ecommerce dashboard tailored for the specific needs of an Ecommerce Clothing Brand. 
+By rethinking standard application boundaries, we created a deployment model where HTML, CSS, SQL templates, data loading, transformation logic, and rendering behavior all live in a single source file. 
 
-Embracing **vibe coding** to push transformation logic to the browser—paired with concurrent querying and strict state management—proves that you don't always need complex frontend frameworks to build sophisticated, data-dense Moby AI apps. The result is an easily maintainable, rapidly deployed application that puts critical business insights right at the merchant's fingertips.
+This vibe-coded approach—layered on top of the Triple Whale and Moby AI platforms—proves that with a direct pipeline from backend tables to frontend transformations, you can deliver an incredibly capable, lightning-fast ecommerce dashboard.
