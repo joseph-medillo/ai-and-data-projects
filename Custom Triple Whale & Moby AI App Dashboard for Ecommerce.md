@@ -1,7 +1,7 @@
 ---
-**SEO Title:** Vibe Coding a Custom Triple Whale & Moby AI App Dashboard for Ecommerce
-**Meta Description:** Discover how we used vibe coding to build a blazing-fast, single-page Moby AI app and Triple Whale dashboard for a fast-growing ecommerce clothing brand, taking a deep dive from backend data sources to frontend rendering.
-**Target Keywords:** Triple Whale, Moby AI, vibe coding, Moby AI app, custom ecommerce dashboard, Shopify data, single-page app, ecommerce architecture
+SEO Title: Vibe Coding a Custom Triple Whale & Moby AI App Dashboard for Ecommerce
+Meta Description: Discover how we used vibe coding to build a blazing-fast, single-page Moby AI app and Triple Whale dashboard for a fast-growing ecommerce clothing brand, taking a deep dive from backend data sources to frontend rendering.
+Target Keywords: Triple Whale, Moby AI, vibe coding, Moby AI app, custom ecommerce dashboard, Shopify data, single-page app, ecommerce architecture
 ---
 
 # Under the Hood: Architecting a Real-Time Triple Whale & Moby AI Dashboard (Backend to Frontend)
